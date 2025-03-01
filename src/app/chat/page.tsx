@@ -10,7 +10,7 @@ import { Message, Agent } from "@/lib/types";
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [agentId, setAgentId] = useState("3e3283ef-b9a0-4c8e-a902-a0a2b6d2a924"); // Zeek
-  const [isDarkMode, setIsDarkMode] = useState(false); // Theme state
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
   const agents: Agent[] = [
@@ -32,10 +32,6 @@ export default function ChatPage() {
     }
   };
 
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
-  };
-
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -43,20 +39,14 @@ export default function ChatPage() {
   }, [messages]);
 
   return (
-    <div className={`flex flex-col h-screen w-[75%] mx-auto p-4 ${isDarkMode ? "dark" : ""}`}>
-      <div className="flex justify-between items-center mb-4">
+    <div className={`flex flex-col h-screen w-[75%] mx-auto p-4 ${isDarkMode ? "dark bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
+      <div className="flex justify-between items-center mb-4 relative">
         <AgentSelector agents={agents} selectedAgentId={agentId} onSelect={setAgentId} />
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-        >
-          {isDarkMode ? "☀️" : "🌙"}
-        </button>
       </div>
-      <div className="flex-1 overflow-hidden">
-        <ChatHistory ref={chatRef} messages={messages} />
+      <div className="flex-1 overflow-y-auto pb-20" ref={chatRef}>
+        <ChatHistory messages={messages} />
       </div>
-      <div className="mt-4 sticky bottom-4 z-10 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md">
+      <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 w-[75%] p-4 rounded-lg shadow-md ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
         <MessageInput onSend={handleSend} />
       </div>
     </div>
