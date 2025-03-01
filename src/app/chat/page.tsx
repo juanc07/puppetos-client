@@ -14,11 +14,39 @@ export default function ChatPage() {
   const chatRef = useRef<HTMLDivElement>(null);
 
   const agents: Agent[] = [
-    { id: "3e3283ef-b9a0-4c8e-a902-a0a2b6d2a924", name: "Zeek" },
-    { id: "<uuid2>", name: "Luna" }, // Replace with Luna’s ID
+    { id: "agentId1", name: "Zeek" },
+    { id: "agentId2", name: "Luna" },
   ];
 
+  // Fetch agents from API
+  /*useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/agents/getAgentIds");
+        const data = await response.json();
+
+        if (data.agentInfo && Array.isArray(data.agentInfo)) {
+          setAgents(data.agentInfo);
+          if (data.agentInfo.length > 0 && !agentId) {
+            setAgentId(data.agentInfo[0].agentId); // Set first agent as default only if none is selected
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAgents();
+  }, []);*/
+
   const handleSend = async (text: string) => {
+    if (!agentId) {
+      setMessages((prev) => [...prev, { sender: "agent", text: "No agent selected." }]);
+      return;
+    }
+    
     const userMessage: Message = { sender: "user", text };
     setMessages((prev) => [...prev, userMessage]);
 
