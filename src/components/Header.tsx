@@ -16,9 +16,12 @@ export function Header() {
   return (
     <header className="p-4 border-b bg-white dark:bg-gray-900 flex items-center justify-between">
       <Link href="/" className="text-2xl font-bold text-gray-800 dark:text-gray-200 hover:text-blue-600">
-        PuppetOS Chat
+        PuppetOS
       </Link>
       <nav className="flex gap-4 items-center">
+      <Link href="/create-agent" className="text-gray-600 dark:text-gray-300 hover:text-blue-500">
+          Create Agent
+        </Link>
         <Link href="/chat" className="text-gray-600 dark:text-gray-300 hover:text-blue-500">
           Chat
         </Link>
