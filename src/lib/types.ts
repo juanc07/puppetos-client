@@ -1,5 +1,5 @@
 export interface Message {
-    sender: "user" | "agent";
+    sender: "user" | "agent" | "system";
     text: string;
   }
   

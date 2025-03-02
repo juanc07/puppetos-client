@@ -4,22 +4,19 @@ import { useState, useRef, useEffect } from "react";
 import { ChatHistory } from "@/components/ChatHistory";
 import { MessageInput } from "@/components/MessageInput";
 import { AgentSelector } from "@/components/AgentSelector";
-import { sendMessage,sendMessageStream } from "@/lib/api";
+import { sendMessageStream } from "@/lib/api";
 import { Message, Agent } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [agentId, setAgentId] = useState<string>("3e3283ef-b9a0-4c8e-a902-a0a2b6d2a924");
-  const [agents, setAgents] = useState<Agent[]>([
-    { id: "3e3283ef-b9a0-4c8e-a902-a0a2b6d2a924", name: "Zeek" },
-    { id: "agentId2", name: "Luna" },
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [agentId, setAgentId] = useState<string | null>(null); // No hardcoded default
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [isLoading, setIsLoading] = useState(true); // Start as true to ensure loading
   const chatRef = useRef<HTMLDivElement>(null);
 
-  // Fetch agents from API
+  // Fetch agents from API and set first agent as default
   useEffect(() => {
     const fetchAgents = async () => {
       setIsLoading(true);
@@ -33,15 +30,20 @@ export default function ChatPage() {
             name: agent.name || "Unnamed Agent",
           }));
           setAgents(fetchedAgents);
-          if (fetchedAgents.length > 0 && !agentId) {
-            setAgentId(fetchedAgents[0].id);
+          if (fetchedAgents.length > 0) {
+            setAgentId(fetchedAgents[0].id); // Set first agent as default after loading
           }
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { sender: "system", text: "No agents available." },
+          ]);
         }
       } catch (error) {
         console.error("Error fetching agents:", error);
         setMessages((prev) => [
           ...prev,
-          { sender: "agent", text: "Failed to load agents. Using defaults." },
+          { sender: "system", text: "Failed to load agents. Please try again later." },
         ]);
       } finally {
         setIsLoading(false);
@@ -58,11 +60,11 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  const handleSend = async (text: string) => {
+  const handleSendStream = async (text: string) => {
     if (!agentId) {
       setMessages((prev) => [
         ...prev,
-        { sender: "agent", text: "Please select an agent first." },
+        { sender: "system", text: "Please select an agent first." },
       ]);
       return;
     }
@@ -71,41 +73,14 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      const reply = await sendMessage(text, agentId);
-      const agentMessage: Message = { sender: "agent", text: reply };
-      setMessages((prev) => [...prev, agentMessage]);
-    } catch (error) {
-      const errorMessage: Message = {
-        sender: "agent",
-        text: `Error: ${(error as Error).message}`,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    }    
-  };
-
-  const handleSendStream = async (text: string) => {
-    if (!agentId) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "agent", text: "Please select an agent first." },
-      ]);
-      return;
-    }
-
-    const userMessage: Message = { sender: "user", text };
-    setMessages((prev) => [...prev, userMessage]);    
-
-    try {
-      let agentResponse = ""; // Accumulate the streamed response
+      let agentResponse = "";
       await sendMessageStream(
         text,
         agentId,
         (chunk) => {
-          // Handle each chunk as it arrives
           agentResponse += chunk;
           setMessages((prev) => {
             const lastMessage = prev[prev.length - 1];
-            // If the last message is from the agent, update it; otherwise, add a new one
             if (lastMessage?.sender === "agent") {
               return [
                 ...prev.slice(0, -1),
@@ -116,18 +91,16 @@ export default function ChatPage() {
           });
         },
         (error) => {
-          // Handle errors during streaming
           const errorMessage: Message = {
-            sender: "agent",
+            sender: "system",
             text: `Error: ${error.message}`,
           };
           setMessages((prev) => [...prev, errorMessage]);
         }
       );
     } catch (error) {
-      // Handle errors from the initial fetch or setup
       const errorMessage: Message = {
-        sender: "agent",
+        sender: "system",
         text: `Error: ${(error as Error).message}`,
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -143,10 +116,12 @@ export default function ChatPage() {
           <div className="flex items-center gap-4">
             {isLoading ? (
               <span className="text-muted-foreground">Loading agents...</span>
+            ) : agents.length === 0 ? (
+              <span className="text-muted-foreground">No agents available</span>
             ) : (
               <AgentSelector
                 agents={agents}
-                selectedAgentId={agentId}
+                selectedAgentId={agentId} // Type is string | null
                 onSelect={setAgentId}
               />
             )}
@@ -166,7 +141,7 @@ export default function ChatPage() {
       {/* Message Input */}
       <footer className="sticky bottom-0 bg-background border-t">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <MessageInput onSend={handleSendStream} />
+          <MessageInput onSend={handleSendStream} disabled={!agentId || isLoading} />
         </div>
       </footer>
     </div>
