@@ -18,10 +18,14 @@ export default function ChatPage() {
 
   // Fetch agents from API and set first agent as default
   useEffect(() => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    // Use NEXT_PUBLIC_API_URL, fallback to localhost only if unset
+    const apiRoot = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
     const fetchAgents = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:3000/api/agents/getAgentIds");
+        const response = await fetch(`${apiRoot}/api/agents/getAgentIds`);
         const data = await response.json();
 
         if (data.agentInfo && Array.isArray(data.agentInfo)) {
