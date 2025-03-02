@@ -20,7 +20,7 @@ export function Header() {
       </Link>
       <nav className="flex gap-4 items-center">
       <Link href="/create-agent" className="text-gray-600 dark:text-gray-300 hover:text-blue-500">
-          Create Agent
+          Manage
         </Link>
         <Link href="/chat" className="text-gray-600 dark:text-gray-300 hover:text-blue-500">
           Chat
