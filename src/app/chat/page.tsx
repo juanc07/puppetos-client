@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChatHistory } from "@/components/ChatHistory";
 import { MessageInput } from "@/components/MessageInput";
 import { AgentSelector } from "@/components/AgentSelector";
-import { sendMessage } from "@/lib/api";
+import { sendMessage,sendMessageStream } from "@/lib/api";
 import { Message, Agent } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,57 @@ export default function ChatPage() {
         text: `Error: ${(error as Error).message}`,
       };
       setMessages((prev) => [...prev, errorMessage]);
+    }    
+  };
+
+  const handleSendStream = async (text: string) => {
+    if (!agentId) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "agent", text: "Please select an agent first." },
+      ]);
+      return;
+    }
+
+    const userMessage: Message = { sender: "user", text };
+    setMessages((prev) => [...prev, userMessage]);    
+
+    try {
+      let agentResponse = ""; // Accumulate the streamed response
+      await sendMessageStream(
+        text,
+        agentId,
+        (chunk) => {
+          // Handle each chunk as it arrives
+          agentResponse += chunk;
+          setMessages((prev) => {
+            const lastMessage = prev[prev.length - 1];
+            // If the last message is from the agent, update it; otherwise, add a new one
+            if (lastMessage?.sender === "agent") {
+              return [
+                ...prev.slice(0, -1),
+                { sender: "agent", text: agentResponse },
+              ];
+            }
+            return [...prev, { sender: "agent", text: agentResponse }];
+          });
+        },
+        (error) => {
+          // Handle errors during streaming
+          const errorMessage: Message = {
+            sender: "agent",
+            text: `Error: ${error.message}`,
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        }
+      );
+    } catch (error) {
+      // Handle errors from the initial fetch or setup
+      const errorMessage: Message = {
+        sender: "agent",
+        text: `Error: ${(error as Error).message}`,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     }
   };
 
@@ -115,7 +166,7 @@ export default function ChatPage() {
       {/* Message Input */}
       <footer className="sticky bottom-0 bg-background border-t">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <MessageInput onSend={handleSend} />
+          <MessageInput onSend={handleSendStream} />
         </div>
       </footer>
     </div>
