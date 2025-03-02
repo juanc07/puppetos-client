@@ -1,52 +1,72 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChatHistory } from "@/components/ChatHistory"; // Corrected path
-import { MessageInput } from "@/components/MessageInput"; // Corrected path
-import { AgentSelector } from "@/components/AgentSelector"; // Corrected path
+import { ChatHistory } from "@/components/ChatHistory";
+import { MessageInput } from "@/components/MessageInput";
+import { AgentSelector } from "@/components/AgentSelector";
 import { sendMessage } from "@/lib/api";
 import { Message, Agent } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [agentId, setAgentId] = useState("3e3283ef-b9a0-4c8e-a902-a0a2b6d2a924"); // Zeek
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [agentId, setAgentId] = useState<string>("3e3283ef-b9a0-4c8e-a902-a0a2b6d2a924");
+  const [agents, setAgents] = useState<Agent[]>([
+    { id: "3e3283ef-b9a0-4c8e-a902-a0a2b6d2a924", name: "Zeek" },
+    { id: "agentId2", name: "Luna" },
+  ]);
+  const [isLoading, setIsLoading] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
-  const agents: Agent[] = [
-    { id: "agentId1", name: "Zeek" },
-    { id: "agentId2", name: "Luna" },
-  ];
-
   // Fetch agents from API
-  /*useEffect(() => {
+  useEffect(() => {
     const fetchAgents = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch("http://localhost:3000/api/agents/getAgentIds");
         const data = await response.json();
 
         if (data.agentInfo && Array.isArray(data.agentInfo)) {
-          setAgents(data.agentInfo);
-          if (data.agentInfo.length > 0 && !agentId) {
-            setAgentId(data.agentInfo[0].agentId); // Set first agent as default only if none is selected
+          const fetchedAgents = data.agentInfo.map((agent: any) => ({
+            id: agent.agentId,
+            name: agent.name || "Unnamed Agent",
+          }));
+          setAgents(fetchedAgents);
+          if (fetchedAgents.length > 0 && !agentId) {
+            setAgentId(fetchedAgents[0].id);
           }
         }
       } catch (error) {
         console.error("Error fetching agents:", error);
+        setMessages((prev) => [
+          ...prev,
+          { sender: "agent", text: "Failed to load agents. Using defaults." },
+        ]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAgents();
-  }, []);*/
+  }, []);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSend = async (text: string) => {
     if (!agentId) {
-      setMessages((prev) => [...prev, { sender: "agent", text: "No agent selected." }]);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "agent", text: "Please select an agent first." },
+      ]);
       return;
     }
-    
+
     const userMessage: Message = { sender: "user", text };
     setMessages((prev) => [...prev, userMessage]);
 
@@ -55,28 +75,49 @@ export default function ChatPage() {
       const agentMessage: Message = { sender: "agent", text: reply };
       setMessages((prev) => [...prev, agentMessage]);
     } catch (error) {
-      const errorMessage: Message = { sender: "agent", text: `Error: ${(error as Error).message}` };
+      const errorMessage: Message = {
+        sender: "agent",
+        text: `Error: ${(error as Error).message}`,
+      };
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
 
-  useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  }, [messages]);
-
   return (
-    <div className={`flex flex-col h-screen w-[75%] mx-auto p-4 ${isDarkMode ? "dark bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
-      <div className="flex justify-between items-center mb-4 relative">
-        <AgentSelector agents={agents} selectedAgentId={agentId} onSelect={setAgentId} />
-      </div>
-      <div className="flex-1 overflow-y-auto pb-20" ref={chatRef}>
-        <ChatHistory messages={messages} />
-      </div>
-      <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 w-[75%] p-4 rounded-lg shadow-md ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
-        <MessageInput onSend={handleSend} />
-      </div>
+    <div className={cn("min-h-screen flex flex-col", "bg-background")}>
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-background border-b">
+        <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
+          <h1 className="text-xl font-semibold">AI Chat</h1>
+          <div className="flex items-center gap-4">
+            {isLoading ? (
+              <span className="text-muted-foreground">Loading agents...</span>
+            ) : (
+              <AgentSelector
+                agents={agents}
+                selectedAgentId={agentId}
+                onSelect={setAgentId}
+              />
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Chat Area */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6">
+        <Card className="h-[calc(100vh-12rem)] flex flex-col">
+          <CardContent className="flex-1 p-6 overflow-y-auto" ref={chatRef}>
+            <ChatHistory messages={messages} />
+          </CardContent>
+        </Card>
+      </main>
+
+      {/* Message Input */}
+      <footer className="sticky bottom-0 bg-background border-t">
+        <div className="max-w-5xl mx-auto px-4 py-4">
+          <MessageInput onSend={handleSend} />
+        </div>
+      </footer>
     </div>
   );
 }
