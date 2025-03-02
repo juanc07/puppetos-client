@@ -94,27 +94,27 @@ const UpdateAgentForm = ({ onResponse, onError }: UpdateAgentFormProps) => {
             ...formData,
             knowledge: formData.knowledge
                 ? {
-                    ...formData.knowledge,
-                    data: knowledgeInput.split(",").map(item => item.trim()).filter(Boolean),
-                }
+                      ...formData.knowledge,
+                      data: knowledgeInput.split(",").map(item => item.trim()).filter(Boolean),
+                  }
                 : undefined,
             personality: formData.personality
                 ? {
-                    ...formData.personality,
-                    preferences: {
-                        ...(formData.personality.preferences || { topics: [], languages: [] }),
-                        topics: topicsInput ? topicsInput.split(",").map(item => item.trim()).filter(Boolean) : formData.personality.preferences?.topics || [],
-                        languages: formData.personality.preferences?.languages || [],
-                    },
-                }
+                      ...formData.personality,
+                      preferences: {
+                          ...(formData.personality.preferences || { topics: [], languages: [] }),
+                          topics: topicsInput ? topicsInput.split(",").map(item => item.trim()).filter(Boolean) : formData.personality.preferences?.topics || [],
+                          languages: formData.personality.preferences?.languages || [],
+                      },
+                  }
                 : undefined,
             settings: formData.settings
                 ? {
-                    ...formData.settings,
-                    platforms: platformsInput.split(",").map(item => item.trim()).filter(Boolean),
-                }
+                      ...formData.settings,
+                      platforms: platformsInput.split(",").map(item => item.trim()).filter(Boolean),
+                  }
                 : undefined,
-            ruleIds: ruleIdsInput ? ruleIdsInput.split(",").map(id => item.trim()).filter(Boolean) : undefined,
+            ruleIds: ruleIdsInput ? ruleIdsInput.split(",").map(id => id.trim()).filter(Boolean) : undefined, // Fixed 'item' to 'id'
         };
 
         try {
@@ -130,7 +130,7 @@ const UpdateAgentForm = ({ onResponse, onError }: UpdateAgentFormProps) => {
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-                <Label htmlFor="agentIdSelect" className="block text-sm font-medium text-gray-700">Select Agent</Label>
+                <Label htmlFor="agentIdSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Agent</Label>
                 <Select value={agentId} onValueChange={handleAgentSelection} disabled={loading}>
                     <SelectTrigger id="agentIdSelect" className="w-full">
                         <SelectValue placeholder="Select an agent to update" />
